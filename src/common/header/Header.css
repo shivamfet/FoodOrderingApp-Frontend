@@ -1,0 +1,35 @@
+.header-container {
+    background-color:darkslategray;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items:center
+}
+
+.searchBox {
+    display: flex;
+    flex-direction: row;
+    width: 300px;
+}
+
+.tabs {
+    margin-bottom: 10px;
+}
+
+.login_signup_button {
+    display: flex;
+    justify-content: center;
+}
+
+.dispNone {
+    display: none;
+}
+
+.dispBlock {
+    display: block;
+}
+
+.red {
+    color: red;
+}
