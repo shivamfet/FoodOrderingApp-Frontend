@@ -63,18 +63,29 @@ class Header extends Component {
         this.state = {
             value: 0,
             isModalOpen: false,
-            contactNumRequired: "dispNone",
-            contactNum: "",
+            
+            contactNumRequired : "dispNone",
+            contactNumHelperText : "",
+            contactNum : "",
+            
             loginPasswordRequired: "dispNone",
             loginPassword: "",
+            
             firstnameRequired: "dispNone",
             firstname: "",
+            
             lastnameRequired: "dispNone",
             lastname: "",
+            
             emailRequired: "dispNone",
             email: "",
+            
             registerPasswordRequired: "dispNone",
             registerPassword: "",
+            
+            registerContactNumRequired : "dispNone",
+            registerContactNum: "",
+            
             registrationSuccess: false,
             loggedIn: sessionStorage.getItem("access-token") == null ? false : true
         };
@@ -88,6 +99,7 @@ class Header extends Component {
         this.setState({ isModalOpen: true })
         this.setState({ loginPasswordRequired : "dispNone"})
         this.setState({ contactNumRequired : " dispNone"})
+        this.setState({ contactNumHelperText : ""})
     }
 
     closeModalHandler = () => {
@@ -95,12 +107,43 @@ class Header extends Component {
     }
 
     loginClickHandler = () => {
-        this.state.contactNum === "" ? this.setState({contactNumRequired : "dispBlock"}) : this.setState({contactNumRequired : "dispNone"})
-        this.state.loginPassword === "" ? this.setState({loginPasswordRequired : "dispBlock"}) : this.setState({loginPasswordRequired : "dispNone"})
+
+        let contactNumber = this.state.contactNum;
+        let loginPassword = this.state.loginPassword;
+
+        if (contactNumber === "" && loginPassword === "") {
+            this.setState({
+                contactNumRequired : "dispBlock" ,
+                loginPasswordRequired : "dispBlock" ,
+                contactNumHelperText : "required"
+            });
+        } else if (contactNumber != "" && loginPassword === "") {
+            this.setState({
+                contactNumRequired : "dispNone" ,
+                loginPasswordRequired : "dispBlock" ,
+            });
+        } else if (contactNumber === "" && loginPassword != "") {
+            this.setState({
+                contactNumRequired : "dispBlock" ,
+                loginPasswordRequired : "dispNone" ,
+                contactNumHelperText : "required"
+            });
+        } else {
+            if (!/^\d{10}$/.test(contactNumber)) {
+                console.log("here");
+                this.setState({
+                    contactNumRequired : "dispBlock" ,
+                    contactNumHelperText : "Invalid Contact"
+                }); 
+          
+            }
+        }  
     }
+
 
     inputContactNumChangeHandler = (e) => {
         this.setState({contactNumRequired : "dispNone"})
+        this.setState({contactNumHelperText : ""})
         this.setState({contactNum : e.target.value})
     }
 
@@ -109,7 +152,25 @@ class Header extends Component {
         this.setState({loginPassword : e.target.value})
     }
 
+    inputFirstNameChangeHandler = (e) => {
+        this.setState({firstname : e.target.value})
+    }
 
+    inputLastNameChangeHandler = (e) => {
+        this.setState({lastname : e.target.value})
+    }
+
+    inputEmailChangeHandler = (e) => {
+        this.setState({email : e.target.value})
+    }
+
+    inputRegisterPasswordChangeHandler = (e) => {
+        this.setState({registerPassword : e.target.value})
+    }
+
+    inputregisterContactNumHandler = (e) => {
+        this.setState({registerContactNum : e.target.value})
+    }
 
     render() {
         const { classes } = this.props
@@ -150,9 +211,9 @@ class Header extends Component {
                     <TabContainer>
                         <FormControl required fullWidth={true}>
                             <InputLabel htmlFor="contactnum">Contact No</InputLabel>
-                            <Input id="contactnum" type="text" contactnum={this.state.contactnum} onChange={this.inputContactNumChangeHandler}/>
+                            <Input id="contactnum" type="text" contactnum={this.state.contactNum} onChange={this.inputContactNumChangeHandler}/>
                             <FormHelperText className={this.state.contactNumRequired}>
-                                <span className="red">required</span>
+                                <span className="red">{this.state.contactNumHelperText}</span>
                             </FormHelperText>
                         </FormControl>
                         <br /><br />
@@ -162,6 +223,8 @@ class Header extends Component {
                             <FormHelperText className={this.state.loginPasswordRequired}>
                                 <span className="red">required</span>
                             </FormHelperText>
+                            
+
                         </FormControl>
                         <br /><br />
                         {this.state.loggedIn === true &&
