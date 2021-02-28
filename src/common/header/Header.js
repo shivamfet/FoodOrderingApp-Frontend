@@ -18,6 +18,10 @@ import Tab from '@material-ui/core/Tab';
 import validator from 'validator';
 import Snackbar from '@material-ui/core/Snackbar';
 import './Header.css'
+import { IconButton } from '@material-ui/core';
+import {Link} from 'react-router-dom';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
 
 const styles = theme => ({
     underline: {
@@ -93,8 +97,16 @@ class Header extends Component {
 
             isSnackBarOpen: false,
 
+
+            registrationErrorRequired : "dispNone",
+            registrationErrorMsg : "",
             registrationSuccess: false,
-            loggedIn: sessionStorage.getItem("access-token") == null ? false : true
+            
+            loggedIn: sessionStorage.getItem("access-token") == null ? false : true,
+            loggedUser : sessionStorage.getItem("first_name") == null ? "" : sessionStorage.getItem("first_name"),
+
+            menuState : false,
+            anchorEl : null
         };
     }
 
@@ -114,6 +126,9 @@ class Header extends Component {
 
         let contactNumber = this.state.contactNum;
         let loginPassword = this.state.loginPassword;
+
+        let isContactNumValid = false;
+        let isLoginPasswordValid = false
 
         if (contactNumber === "" && loginPassword === "") {
             this.setState({
@@ -140,12 +155,44 @@ class Header extends Component {
                     contactNumHelperText: "Invalid Contact"
                 });
 
+            } else {
+                isContactNumValid = true;
+                isLoginPasswordValid = true;
             }
+        }
+
+        if (isContactNumValid && isLoginPasswordValid) {
+            let dataLogin = null;
+            let xhrLogin = new XMLHttpRequest();
+            let that = this;
+            xhrLogin.addEventListener("readystatechange" , function() {
+                if (this.readyState === 4) {
+                    console.log(this.responseText);
+                    sessionStorage.setItem("uuid", JSON.parse(this.responseText).id);
+                    sessionStorage.setItem("access-token", xhrLogin.getResponseHeader("access-token"));
+                    sessionStorage.setItem("first_name" , JSON.parse(this.responseText).first_name)
+    
+                    that.setState({
+                        loggedIn: true,
+                        loggedUser : JSON.parse(this.responseText).first_name
+                    });
+    
+                    that.closeModalHandler();
+
+                    // Replace the login button with profile icon
+                }
+            });
+
+            xhrLogin.open("POST" , this.props.baseUrl + "/customer/login");
+            xhrLogin.setRequestHeader("Authorization", "Basic " + window.btoa(this.state.contactNum + ":" + this.state.loginPassword));
+            xhrLogin.setRequestHeader("Content-Type", "application/json");
+            xhrLogin.setRequestHeader("Cache-Control", "no-cache");
+            xhrLogin.send(dataLogin);    
         }
     }
 
     registerClickHandler = () => {
-        this.setState({registrationSuccess : false})
+        this.setState({registrationSuccess : false , registrationErrorRequired : "dispNone"})
         let firstName = this.state.firstname;
         let lastName = this.state.lastname;
         let email = this.state.email;
@@ -213,9 +260,19 @@ class Header extends Component {
             let that = this;
             xhrSignup.addEventListener("readystatechange" , function() {
                 if (this.readyState === 4) {
-                    that.setState({isSnackBarOpen : true , value : 0});
-                    console.log(that.state);
-                    console.log("done");
+                    let response = JSON.parse(this.responseText);
+                    console.log(response);
+                    if (response.code === "SGR-001") {
+                        let errorMsg = response.message;
+                        that.setState({registrationSuccess : false , registrationErrorRequired : "dispBlock" , registrationErrorMsg : errorMsg})
+                    } else {
+                        
+                        console.log(that.state);
+                        //Post Successful registration cleanup the fields in register tab
+                        that.resetFieldsInRegisterTab();
+                        that.setState({isSnackBarOpen : true , value : 0});
+                        console.log("done");
+                    }
                 }
             });
 
@@ -229,6 +286,42 @@ class Header extends Component {
 
     }
 
+    profileMenuClickHandler = (e) => {
+        this.setState({menuState : true ,  anchorEl : e.currentTarget})
+    }
+
+    menuCloseHandler = () => {
+        this.setState({menuState : false})
+    }
+
+    logoutHandler = () => {
+        sessionStorage.removeItem("access-token");
+        sessionStorage.removeItem("first_name");
+        this.setState({loggedIn : false});
+        this.menuCloseHandler();
+    }
+
+    resetFieldsInRegisterTab = () => {
+        this.setState({
+            firstname : "",
+            firstnameRequired : "dispNone",
+
+            lastname : "",
+            lastnameRequired : "dispNone",
+
+            email : "",
+            emailRequired : "dispNone",
+
+            registerPassword : "",
+            registerPasswordRequired : "dispNone",
+
+            registerContactNum : "",
+            registerContactNumRequired : "dispNone",
+
+            registrationErrorMsg : "",
+            registrationErrorRequired : "dispNone",
+        });
+    }
 
     inputContactNumChangeHandler = (e) => {
         this.setState({ contactNumRequired: "dispNone" })
@@ -287,11 +380,33 @@ class Header extends Component {
                             classes
                         }} />
                 </div>
-                <div className="loginButton">
+                {!this.state.loggedIn &&
+                <div className="login_signup_button">
                     <Button color="default" variant="contained" onClick={this.openModalHandler}>
                         <AccountCircleIcon style={{ marginRight: 5 }}></AccountCircleIcon> Login
                 </Button>
-                </div>
+                </div>}
+                {this.state.loggedIn && 
+                <div className="login_signup_button">
+                    <IconButton aria-controls="simple-menu" aria-haspopup="true" onClick={this.profileMenuClickHandler}>
+                    <AccountCircleIcon style={{ marginRight: 3 }}></AccountCircleIcon>
+                    <span>{this.state.loggedUser}
+                        </span>
+
+                    </IconButton>
+                    <Menu
+  id="simple-menu"
+  anchorEl={this.state.anchorEl}
+  keepMounted
+  open={this.state.menuState}
+  onClose={this.menuCloseHandler}
+>
+  <MenuItem onClick={this.profileClickHandler}>Profile 
+  <Link to={"/profile"}></Link></MenuItem>
+  <MenuItem onClick={this.logoutHandler}>Logout  </MenuItem>
+</Menu>
+                    
+                    </div>}
             </header>
             <Modal
                 ariaHideApp={false}
@@ -376,12 +491,10 @@ class Header extends Component {
                             </FormHelperText>
                         </FormControl>
                         <br /><br />
-                        {this.state.registrationSuccess === true &&
-                            <FormControl>
-                                <span className="successText">
-                                    Registration Successful. Please Login!
-                                      </span>
-                            </FormControl>
+                        {!this.state.registrationSuccess &&
+                            <FormHelperText className={this.state.registrationErrorRequired}>
+                                <span className="red">{this.state.registrationErrorMsg}</span>
+                            </FormHelperText>
                         }
                         <br />
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
