@@ -19,7 +19,7 @@ import validator from 'validator';
 import Snackbar from '@material-ui/core/Snackbar';
 import './Header.css'
 import { IconButton } from '@material-ui/core';
-import {Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 
@@ -98,15 +98,17 @@ class Header extends Component {
             isSnackBarOpen: false,
 
 
-            registrationErrorRequired : "dispNone",
-            registrationErrorMsg : "",
+            registrationErrorRequired: "dispNone",
+            registrationErrorMsg: "",
             registrationSuccess: false,
-            
-            loggedIn: sessionStorage.getItem("access-token") == null ? false : true,
-            loggedUser : sessionStorage.getItem("first_name") == null ? "" : sessionStorage.getItem("first_name"),
 
-            menuState : false,
-            anchorEl : null
+            loginErrorRequired: "dispNone",
+            loginErrorMsg: "",
+            loggedIn: sessionStorage.getItem("access-token") == null ? false : true,
+            loggedUser: sessionStorage.getItem("first_name") == null ? "" : sessionStorage.getItem("first_name"),
+
+            menuState: false,
+            anchorEl: null
         };
     }
 
@@ -165,34 +167,41 @@ class Header extends Component {
             let dataLogin = null;
             let xhrLogin = new XMLHttpRequest();
             let that = this;
-            xhrLogin.addEventListener("readystatechange" , function() {
+            xhrLogin.addEventListener("readystatechange", function () {
                 if (this.readyState === 4) {
                     console.log(this.responseText);
-                    sessionStorage.setItem("uuid", JSON.parse(this.responseText).id);
-                    sessionStorage.setItem("access-token", xhrLogin.getResponseHeader("access-token"));
-                    sessionStorage.setItem("first_name" , JSON.parse(this.responseText).first_name)
-    
-                    that.setState({
-                        loggedIn: true,
-                        loggedUser : JSON.parse(this.responseText).first_name
-                    });
-    
-                    that.closeModalHandler();
+                    let response = JSON.parse(this.responseText);
+                    if (response.code === "ATH-002") {
+                        let errorMsg = response.message;
+                        that.setState({ loggedIn: false, loginErrorRequired: "dispBlock", loginErrorMsg: errorMsg })
+                    } else {
+                        sessionStorage.setItem("uuid", JSON.parse(this.responseText).id);
+                        sessionStorage.setItem("access-token", xhrLogin.getResponseHeader("access-token"));
+                        sessionStorage.setItem("first_name", JSON.parse(this.responseText).first_name)
+
+                        that.setState({
+                            loggedIn: true,
+                            loggedUser: JSON.parse(this.responseText).first_name
+                        });
+
+                        that.closeModalHandler();
+                    }
+
 
                     // Replace the login button with profile icon
                 }
             });
 
-            xhrLogin.open("POST" , this.props.baseUrl + "/customer/login");
+            xhrLogin.open("POST", this.props.baseUrl + "/customer/login");
             xhrLogin.setRequestHeader("Authorization", "Basic " + window.btoa(this.state.contactNum + ":" + this.state.loginPassword));
             xhrLogin.setRequestHeader("Content-Type", "application/json");
             xhrLogin.setRequestHeader("Cache-Control", "no-cache");
-            xhrLogin.send(dataLogin);    
+            xhrLogin.send(dataLogin);
         }
     }
 
     registerClickHandler = () => {
-        this.setState({registrationSuccess : false , registrationErrorRequired : "dispNone"})
+        this.setState({ registrationSuccess: false, registrationErrorRequired: "dispNone" })
         let firstName = this.state.firstname;
         let lastName = this.state.lastname;
         let email = this.state.email;
@@ -247,7 +256,7 @@ class Header extends Component {
         }
 
         if (isEmailValid && isContactNumValid && isRegisterPasswordValid) {
-                // Call the end
+            // Call the end
             let dataSignup = JSON.stringify({
                 "email_address": this.state.email,
                 "first_name": this.state.firstname,
@@ -258,68 +267,68 @@ class Header extends Component {
 
             let xhrSignup = new XMLHttpRequest();
             let that = this;
-            xhrSignup.addEventListener("readystatechange" , function() {
+            xhrSignup.addEventListener("readystatechange", function () {
                 if (this.readyState === 4) {
                     let response = JSON.parse(this.responseText);
                     console.log(response);
                     if (response.code === "SGR-001") {
                         let errorMsg = response.message;
-                        that.setState({registrationSuccess : false , registrationErrorRequired : "dispBlock" , registrationErrorMsg : errorMsg})
+                        that.setState({ registrationSuccess: false, registrationErrorRequired: "dispBlock", registrationErrorMsg: errorMsg })
                     } else {
-                        
+
                         console.log(that.state);
                         //Post Successful registration cleanup the fields in register tab
                         that.resetFieldsInRegisterTab();
-                        that.setState({isSnackBarOpen : true , value : 0});
+                        that.setState({ isSnackBarOpen: true, value: 0 });
                         console.log("done");
                     }
                 }
             });
 
-            xhrSignup.open("POST" , this.props.baseUrl + "/customer/signup");
+            xhrSignup.open("POST", this.props.baseUrl + "/customer/signup");
             xhrSignup.setRequestHeader("Content-Type", "application/json");
             xhrSignup.setRequestHeader("Cache-Control", "no-cache");
             console.log(dataSignup);
-            xhrSignup.send(dataSignup);    
+            xhrSignup.send(dataSignup);
         }
 
 
     }
 
     profileMenuClickHandler = (e) => {
-        this.setState({menuState : true ,  anchorEl : e.currentTarget})
+        this.setState({ menuState: true, anchorEl: e.currentTarget })
     }
 
     menuCloseHandler = () => {
-        this.setState({menuState : false})
+        this.setState({ menuState: false })
     }
 
     logoutHandler = () => {
         sessionStorage.removeItem("access-token");
         sessionStorage.removeItem("first_name");
-        this.setState({loggedIn : false});
+        this.setState({ loggedIn: false });
         this.menuCloseHandler();
     }
 
     resetFieldsInRegisterTab = () => {
         this.setState({
-            firstname : "",
-            firstnameRequired : "dispNone",
+            firstname: "",
+            firstnameRequired: "dispNone",
 
-            lastname : "",
-            lastnameRequired : "dispNone",
+            lastname: "",
+            lastnameRequired: "dispNone",
 
-            email : "",
-            emailRequired : "dispNone",
+            email: "",
+            emailRequired: "dispNone",
 
-            registerPassword : "",
-            registerPasswordRequired : "dispNone",
+            registerPassword: "",
+            registerPasswordRequired: "dispNone",
 
-            registerContactNum : "",
-            registerContactNumRequired : "dispNone",
+            registerContactNum: "",
+            registerContactNumRequired: "dispNone",
 
-            registrationErrorMsg : "",
-            registrationErrorRequired : "dispNone",
+            registrationErrorMsg: "",
+            registrationErrorRequired: "dispNone",
         });
     }
 
@@ -360,7 +369,7 @@ class Header extends Component {
     }
 
     snackBarCloseHandler = () => {
-        this.setState({isSnackBarOpen : false});
+        this.setState({ isSnackBarOpen: false });
     }
 
     render() {
@@ -372,7 +381,7 @@ class Header extends Component {
                     <FastfoodIcon style={{ color: "white" }} />
                 </div>
                 <div className="searchBox">
-                    <TextField
+                    <TextField onChange={this.props.searchRestaurantsHandler.bind(this)}
                         fullWidth placeholder="Search By Restaurant Name" InputProps={{
                             startAdornment: (<InputAdornment style={{ color: "white" }} position="start">
                                 <SearchIcon />
@@ -381,31 +390,33 @@ class Header extends Component {
                         }} />
                 </div>
                 {!this.state.loggedIn &&
-                <div className="login_signup_button">
-                    <Button color="default" variant="contained" onClick={this.openModalHandler}>
-                        <AccountCircleIcon style={{ marginRight: 5 }}></AccountCircleIcon> Login
+                    <div className="login_signup_button">
+                        <Button color="default" variant="contained" onClick={this.openModalHandler}>
+                            <AccountCircleIcon style={{ marginRight: 5 }}></AccountCircleIcon> Login
                 </Button>
-                </div>}
-                {this.state.loggedIn && 
-                <div className="login_signup_button">
-                    <IconButton aria-controls="simple-menu" aria-haspopup="true" onClick={this.profileMenuClickHandler}>
-                    <AccountCircleIcon style={{ marginRight: 3 }}></AccountCircleIcon>
-                    <span>{this.state.loggedUser}
-                        </span>
+                    </div>}
+                {this.state.loggedIn &&
+                    <div className="login_signup_button">
+                        <IconButton aria-controls="simple-menu" aria-haspopup="true" onClick={this.profileMenuClickHandler}>
+                            <AccountCircleIcon style={{ marginRight: 3 }}></AccountCircleIcon>
+                            <span>{this.state.loggedUser}
+                            </span>
 
-                    </IconButton>
-                    <Menu
-  id="simple-menu"
-  anchorEl={this.state.anchorEl}
-  keepMounted
-  open={this.state.menuState}
-  onClose={this.menuCloseHandler}
->
-  <MenuItem onClick={this.profileClickHandler}>Profile 
-  <Link to={"/profile"}></Link></MenuItem>
-  <MenuItem onClick={this.logoutHandler}>Logout  </MenuItem>
-</Menu>
-                    
+                        </IconButton>
+                        <Menu
+                            id="simple-menu"
+                            anchorEl={this.state.anchorEl}
+                            keepMounted
+                            open={this.state.menuState}
+                            onClose={this.menuCloseHandler}
+
+                        >
+                            <MenuItem>
+                                <Link to={"/profile"} style={{ textDecoration: 'none', color: 'black' }}><Typography >
+                                    Profile    </Typography></Link></MenuItem>
+                            <MenuItem onClick={this.logoutHandler}><Link to={"/"} style={{ textDecoration: 'none', color: 'black' }}>Logout</Link>   </MenuItem>
+                        </Menu>
+
                     </div>}
             </header>
             <Modal
@@ -440,12 +451,10 @@ class Header extends Component {
 
                         </FormControl>
                         <br /><br />
-                        {this.state.loggedIn === true &&
-                            <FormControl>
-                                <span className="successText">
-                                    Login Successful!
-                                    </span>
-                            </FormControl>
+                        {!this.state.loggedIn &&
+                            <FormHelperText className={this.state.loginErrorRequired}>
+                                <span className="red">{this.state.loginErrorMsg}</span>
+                            </FormHelperText>
                         }
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <Button variant="contained" color="primary" onClick={this.loginClickHandler}>LOGIN</Button>
@@ -505,12 +514,12 @@ class Header extends Component {
 
             </Modal>
             <Snackbar
-            anchorOrigin={{ vertical : 'bottom' , horizontal : 'left'} }
-            open={this.state.isSnackBarOpen}
-            message="Registered successfully! Please login now!"
-            autoHideDuration={5000}
-            onClose={this.snackBarCloseHandler}
-          />
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                open={this.state.isSnackBarOpen}
+                message="Registered successfully! Please login now!"
+                autoHideDuration={5000}
+                onClose={this.snackBarCloseHandler}
+            />
 
         </div>)
     }
